@@ -14,8 +14,8 @@ import type { Request } from 'express';
  * 컨트롤러는 애플리케이션의 Request를 처리하는 목적을 갖는다.
  * 라우팅 메커니즘은 어떤 컨트롤러가 각 요청을 처리할지를 결정한다.
  */
-@Controller('/test')
-export class TestController {
+@Controller('/sample')
+export class SampleController {
   @Get('/number')
   numberWillTransformedJavascriptNumberType(): number {
     return 10;
