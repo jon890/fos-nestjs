@@ -8,9 +8,12 @@ import {
   Post,
   Query,
   Req,
+  UsePipes,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { CreateUserDto } from './create-user.dto';
+import { ZodValidationPipe } from 'src/validation/zod-validation.pipe';
+import type { CreateUserDto } from './create-user.dto';
+import { createUserSchema } from './create-user.dto';
 
 /**
  * 컨트롤러는 애플리케이션의 Request를 처리하는 목적을 갖는다.
@@ -74,6 +77,7 @@ export class SampleController {
   }
 
   @Post('/create-user')
+  @UsePipes(new ZodValidationPipe(createUserSchema))
   createUser(@Body() dto: CreateUserDto): string {
     return `User created: ${dto.name}, ${dto.age}`;
   }
