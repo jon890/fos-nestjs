@@ -9,6 +9,7 @@ export default defineConfig({
   plugins: [
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     tsconfigPaths(), // tsconfig.json의 baseUrl과 paths를 자동으로 적용
+
     swc.vite({
       // 데코레이터 메타데이터 지원을 위해 SWC 사용
       jsc: {
@@ -21,6 +22,7 @@ export default defineConfig({
         },
       },
     }),
+
     ...VitePluginNode({
       adapter: 'express',
       appPath: 'src/main.ts',
@@ -35,6 +37,8 @@ export default defineConfig({
   },
 
   server: {
+    open: false,
+    host: true,
     port: 3000,
   },
 
