@@ -1,13 +1,12 @@
 import { NestApplication, NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
+import type { Express } from 'express';
 
-async function bootstrap() {
+async function bootstrap(): Promise<Express> {
   const app = await NestFactory.create<NestApplication>(AppModule);
-  const port = process.env.SERVER_PORT ?? 3000;
-
-  await app.listen(port).then(() => {
-    console.log(`Server is running on port ${port}`);
-  });
+  await app.init();
+  return app.getHttpAdapter().getInstance();
 }
 
-bootstrap();
+// vite-plugin-node가 요구하는 export
+export const viteNodeApp = bootstrap();
