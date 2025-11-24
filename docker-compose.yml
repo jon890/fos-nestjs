@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ['--config=/etc/otel-collector-config.yaml']
+    volumes:
+      - ./config/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - '4317:4317' # OTLP gRPC receiver
+      - '4318:4318' # OTLP HTTP receiver
+    depends_on:
+      - opensearch
+    restart: unless-stopped
+
+  opensearch:
+    image: opensearchproject/opensearch:latest
+    environment:
+      - discovery.type=single-node
+      - 'OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m'
+      - 'OPENSEARCH_INITIAL_ADMIN_PASSWORD=admin'
+      - 'DISABLE_SECURITY_PLUGIN=true'
+    ports:
+      - '9200:9200'
+      - '9600:9600'
+    volumes:
+      - ./data/opensearch:/usr/share/opensearch/data
+    restart: unless-stopped
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:latest
+    ports:
+      - '5601:5601'
+    environment:
+      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
+      DISABLE_SECURITY_DASHBOARDS_PLUGIN: 'true'
+    depends_on:
+      - opensearch
+    restart: unless-stopped
