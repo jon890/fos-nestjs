@@ -1,4 +1,13 @@
-import { Controller, Get, HttpCode, Ip, Query, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  Ip,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import type { Request } from 'express';
 
 /**
@@ -54,5 +63,11 @@ export class TestController {
   @HttpCode(204)
   overrideStatusCode(): string {
     return 'No content';
+  }
+
+  @Post('/headers')
+  @Header('Cache-Control', 'no-cache')
+  create() {
+    return 'This action adds a new test';
   }
 }
