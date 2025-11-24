@@ -1,5 +1,4 @@
 import { Injectable, Logger, NestMiddleware } from '@nestjs/common';
-import { trace } from '@opentelemetry/api';
 import { NextFunction, Request, Response } from 'express';
 
 @Injectable()
@@ -8,10 +7,20 @@ export class RequestLoggingMiddleware implements NestMiddleware {
     timestamp: true,
   });
 
-  private readonly tracer = trace.getTracer('fos-nestjs', '1.0.0');
-
   use(req: Request, res: Response, next: NextFunction) {
-    this.logger.log(`[Request] Method : ${req.method}, URL: ${req.baseUrl}`);
+    const requestId = crypto.randomUUID();
+
+    this.logger.log(
+      `[Request-${requestId}] Method : ${req.method}, URL: ${this.parseUrl(req)}, body: ${JSON.stringify(req.body)}`,
+    );
     next();
+
+    this.logger.log(
+      `[Response-${requestId}] Status Code: ${res.statusCode}, URL: ${this.parseUrl(req)}`,
+    );
+  }
+
+  private parseUrl(req: Request): string {
+    return req.baseUrl ?? '/';
   }
 }

@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Header,
@@ -9,6 +10,7 @@ import {
   Req,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { CreateUserDto } from './create-user.dto';
 
 /**
  * 컨트롤러는 애플리케이션의 Request를 처리하는 목적을 갖는다.
@@ -69,5 +71,10 @@ export class SampleController {
   @Header('Cache-Control', 'no-cache')
   create() {
     return 'This action adds a new test';
+  }
+
+  @Post('/create-user')
+  createUser(@Body() dto: CreateUserDto): string {
+    return `User created: ${dto.name}, ${dto.age}`;
   }
 }
