@@ -1,6 +1,34 @@
-version: '3.8'
-
 services:
+  mysql:
+    image: mysql:9.4
+    container_name: fos-nestjs-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: fos_nestjs
+      MYSQL_USER: fos_user
+      MYSQL_PASSWORD: fos_password
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./config/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          'localhost',
+          '-u',
+          'root',
+          '-prootpassword',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     command: ['--config=/etc/otel-collector-config.yaml']
