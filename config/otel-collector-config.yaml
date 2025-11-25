@@ -5,6 +5,12 @@ receivers:
         endpoint: 0.0.0.0:4318
       grpc:
         endpoint: 0.0.0.0:4317
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'prometheus'
+          static_configs:
+            - targets: ['promethus:9464']
 
 processors:
   batch:
@@ -12,18 +18,27 @@ processors:
     send_batch_size: 1024
 
 exporters:
-  elasticsearch:
-    endpoints:
-      - http://opensearch:9200
-    logs_index: logs-fos-nestjs
-    flush:
-      interval: 5s
-    mapping:
-      mode: ecs
+  opensearch:
+    http:
+      endpoint: http://opensearch:9200
+    # Logs configuration
+    logs_index: 'otel-logs-%{service.name}'
+    logs_index_fallback: 'default-service'
+    logs_index_time_format: 'yyyy.MM.dd'
+    # Traces configuration
+    traces_index: 'otel-traces-%{service.name}'
+    traces_index_fallback: 'default-service'
+    traces_index_time_format: 'yyyy.MM.dd'
+    sending_queue:
+      batch:
 
 service:
   pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [opensearch]
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [elasticsearch]
+      exporters: [opensearch]

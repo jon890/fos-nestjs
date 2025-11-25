@@ -1,31 +1,40 @@
-import { Injectable, Logger, NestMiddleware } from '@nestjs/common';
+import { Injectable, NestMiddleware } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
+import { OpenTelemetryLogger } from 'src/telemetry/otel.logger';
 
 @Injectable()
 export class RequestLoggingMiddleware implements NestMiddleware {
-  private logger: Logger = new Logger(RequestLoggingMiddleware.name, {
-    timestamp: true,
-  });
+  constructor(private readonly logger: OpenTelemetryLogger) {}
 
   use(req: Request, res: Response, next: NextFunction) {
     const requestId = crypto.randomUUID();
+    const start = Date.now();
 
-    // 요청 시작 로깅
-    this.logger.log(
-      `[Request-${requestId}] Method: ${req.method}, URL: ${this.parseUrl(req)}, body: ${JSON.stringify(req.body)}`,
-    );
-
-    // 응답 완료 후 로깅 (next() 실행 후 응답이 완료되면 실행됨)
     res.on('finish', () => {
+      const duration = Date.now() - start;
+      const baseLog = {
+        requestId,
+        method: req.method,
+        url: this.parseUrl(req),
+        statusCode: res.statusCode,
+        durationMs: duration,
+      };
+
       if (res.statusCode >= 400) {
         this.logger.error(
-          `[Response-${requestId}] Status Code: ${res.statusCode}, URL: ${this.parseUrl(req)}`,
+          `[HTTP] ${req.method} ${this.parseUrl(req)} -> ${res.statusCode} (${duration}ms)`,
+          undefined,
+          RequestLoggingMiddleware.name,
         );
       } else {
         this.logger.log(
-          `[Response-${requestId}] Status Code: ${res.statusCode}, URL: ${this.parseUrl(req)}`,
+          `[HTTP] ${req.method} ${this.parseUrl(req)} -> ${res.statusCode} (${duration}ms)`,
+          RequestLoggingMiddleware.name,
         );
       }
+
+      // 구조화 로그로 세부 필드 전달
+      this.logger.log(JSON.stringify(baseLog), RequestLoggingMiddleware.name);
     });
 
     next();
