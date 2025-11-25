@@ -92,3 +92,161 @@
   - any는 타입시스템의 신뢰도를 떯어뜨림
     - 런타임에 타입 오류를 발견하게 된다면 타입 체커를 신뢰할 수 없게 됨
     - any 타입을 쓰지 않으면 런타임에 발견될 오류를 미리 잡을 수 있고, 신뢰도를 높일 수 있음
+
+# 2장 - 타입스크립트의 타입 시스템
+
+## 아이템 6 : 편집기를 사용하여 타입 시스템 검색하기
+
+- 타입스크립트를 설치하면 2가지를 실행할 수 있다
+  - 타입스크립트 컴파일러 (tsc)
+  - 단독으로 실행할 수 있는 타입스크립트 서버 (tsserver)
+    - 언어 서비스는 코드 자동완성, 명세 검사, 검색, 리팩터링 등이 포함 됨
+- 보통의 경우 심벌 위에 마우스 커서를 대면 타입스크립트가 타입을 어떻게 판단하고 있는지 확인할 수 있음
+  - 연산자 체인 중간의 추론된 제너릭 타입을 알고 싶다면, 메서드 이름을 조사하면 됨
+- 타입 선언은 처음에는 이해하기 어렵지만 타입스크립트가 무엇을 하는지, 어떻게 라이브러리가 모델링되었는지, 어떻게 오류를 찾아낼지 살펴볼 수 있다
+
+## 아이템 7 : 타입이 값들의 집합이라고 생각하기
+
+- 런타임에 모든 변수는 자바스크립트 세상의 값으로부터 장해지는 각자의 고유한 값들 가짐
+- 그러나 코드가 실행되기 전, 즉 타입스크립트가 오류를 체크하는 순간에는 `타입`을 가지고 있음
+- `할당 가능한 값들의 집합`이 타입이라고 생각하면 됨
+  - 이 집합은 타입의 범위라고 부르기도 함
+  - (예시) 모든 숫자값의 집합 number 타입
+
+- 가장 작은 집합은 아무 값도 포함하지 않는 공집합 : never
+- 한 가지 값만 포함하는 타입, 유닛 타입이라고도 불리는 리터럴 타입
+  - ```ts
+    type A = 'A';
+    ```
+- 두 개 혹은 세 개로 묶으려면 유니온 타입을 사용
+  - ```ts
+    type AB = 'A' | 'B';
+    ```
+- 유니온 타입은 값 집합들의 합집합을 일컫는다
+
+- 다양한 타입스크립트 오류에서 `할당 가능한`이라는 문구를 볼 수 있음
+  - 이 문구는 집합의 관점에서, `~의 부분 집합`(두 타입의 관계)를 의미한다
+  - 서브타입이라는 용어를 들어 봤을 것 이다. 어떤 집합이 다른 집합의 부분 집합이라는 의미이다
+  - 1차원, 2차원, 3차원 벡터의 관점에서 생각해보면 다음과 같은 코드를 작성할 수 있다
+    - ```ts
+      interface Vector1D {
+        x: number;
+      }
+      interface Vector2D extends Vector1D {
+        y: number;
+      }
+      interface Vector3D extends Vector2D {
+        z: number;
+      }
+      ```
+  - extends 키워드는 제너릭 타입에서 한정자로도 쓰이며, 이 문맥에서는 `~의 부분 집합`을 의미하기도 함
+    - ```ts
+      function getKey<K extends string>(val: any, key: K) {
+        // ...
+      }
+      ```
+    - string을 상속한다는 의미를 객체 상속의 관점으로 생각한다면 이해하기가 어려움
+    - 반면 string을 상속한다는 의미를 집합의 관점으로 생각해보면 쉽게 이해할 수 있음
+      - string의 부분 집합 범위를 가지는 어떠한 타입이 됨
+      - 이 타입은 string 리터럴 타입, string 리터럴 타입의 유니온, string 자신을 포함 함
+
+## 아이템 8 : 타입 공간과 값 공간의 심벌 구분하기
+
+- 타입스크립트 심벌은 타입 공간이나 값 공간 중의 한 곳에 존재
+- 심벌은 이름이 같더라도 속하는 공간에 따라 다른 것을 나타낼 수 있기 때문에 혼란스러울 수 있음
+  - ```ts
+    interface Cylinder {
+      radius: number;
+      height: number;
+    }
+    const Cylinder = (radius: number, height: number) => ({ radius, height });
+    ```
+  - interface Cylinder에서 Cylinder는 타입으로 쓰임
+  - const Cylinder에서 Cylinder와 이름은 같지만 값으로 쓰임, 서로 아무런 연관도 없음
+- class와 enum은 상황에 따라 타입과 값 두가지 모두 가능한 예약어
+  - 타입으로 쓰이는 경우
+  - ```ts
+    class Cylinder {
+      radius = 1;
+      height = 1;
+    }
+
+    function calculateVolume(shape: unknown) {
+      if (shape instanceof Cylinder) {
+        shape; // 정상, 타입은 Cylinder
+        shape.radius; // 정상, 타입은 number
+      }
+    }
+    ```
+
+  - 클래스가 타입으로 쓰일 때는 형태(속성과 메서드)가 사용되는 반면, 값으로 쓰일 때는 생성자가 사용 됨
+
+- 클래스가 자바스크립트에서는 실제 함수로 구현되기 때문에 다음 과 같이 타입이 나옴
+  - ```ts
+    const v = typeof Cylinder; // 값이 "function"
+    type T = typeof Cylinder; // 타입이 typeof Cylinder
+
+    declare let fn: T;
+    const c = new fn(); // 타입이 Cylinder
+
+    // 제너릭을 사용해 생성자 타입과 인스턴스 타입을 전환할 수 있음
+    type c = InstanceType<type Cylinder> // 타입이 Cylinder
+    ```
+
+## 아이템 9 : 타입 단언보다는 타입 선언을 사용하기
+
+- 타입스크립트에서 변수에 값을 할당하고 타입을 부여하는 방법은 2가지
+  - ```ts
+    interface Person {
+      name: string;
+    }
+
+    const alice: Personal = { name: 'alice' }; // 타입은 Person
+    const bob = { name: 'Bob' } as Person; // 타입은 Person
+    ```
+
+  - 두 가지 방법은 같아보이나 그렇지 않다.
+  - 첫 번째 방법은 변수에 `타입 선언`을 붙여서 그 값이 선언된 타입임을 명시한다
+  - 두 번째 방법은 `타입 단언`을 수행한다. 그러면 타입스크립트가 추론한 타입이 있더라도 `Person` 타입으로 간주한다
+
+- 타입 단언보다는 타입 선언을 사용하는게 낫다.
+  - 타입 단언은 강제로 타입을 지정하는 것이므로 타입 체커에게 오류를 무시하라는 것과 같다
+  - 타입 단언이 꼭 필요한 경우가 아니라면, 안전성 체크도 되는 타입 선언을 사용하는 것이 좋다
+
+- 화살표 함수의 타입 선언은 추론된 타입이 모호할 떄가 있다
+  - 원하는 타입을 직접 명시하고, 타입스크립트가 할당문의 유효성도 검사하게 하려면 다음과 같이 한다.
+  - ```ts
+    const people: Person[] = ['alice', 'bob', 'jan'].map(
+      (name): Person => ({ name }),
+    );
+    ```
+
+- 타입 단언이 꼭 필요한 경우
+  - 타입 체커가 추론한 타입보다 우리가 직접 판단하는 타입이 더 정확할 때 의미가 있다
+  - 예를 들어, DOM 엘리먼트에 대해서는 타입스크립트보다 우리가 더 정확히 알 때가 있다
+  - ```ts
+    document.querySelector('#myButton').addEventListener('click', (e) => {
+      e.currentTarget; // 타입은 EventTarget
+      const button = e.currentTarget as HTMLButtonElement;
+      button; // 타입은 HTMLButtonElement
+    });
+    ```
+
+## 아이템 10 : 객체 래퍼 타입 피하기
+
+- 자바스크립트에는 객체 이외에도 기본형 값들에 대한 일곱가지 타입이 있다
+  - string, number, boolean, null, undefined, symbol, bigint
+  - 기본형들은 불변이며 메서드를 가지지 않는다는점에서 객체와 구분된다
+- 그런데 string의 경우 메소드를 가진 것 처럼 보인다
+  - `'primitive'.charAt(3)`
+  - 하지만 사실 charAt은 string의 메서드가 아니며, string을 사용할 때 자바스크립트 내부적으로 래퍼 타입으로 변환되어서 접근된다.
+  - 다른 기본형에도 동일하게 객체 래퍼 타입이 존재하며, 이 덕분에 기본형 값에 메서드를 사용할 수 있다
+
+- 타입스크립트는 기본형과 객체 래퍼 타입을 별도로 모델링한다
+  - string, String
+  - number, Number
+  - boolean, Boolean
+  - symbol, Symbol
+  - bigint, BigInt
+- 그런데 string을 사용할 때는 특히 유의해야 한다. string을 String이라고 잘못 타이핑하기 쉽다
+  - string은 String에 할당할 수 있지만, String은 string에 할당할 수 없다.
