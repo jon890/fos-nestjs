@@ -13,6 +13,7 @@ export default defineConfig({
     swc.vite({
       // 데코레이터 메타데이터 지원을 위해 SWC 사용
       jsc: {
+        target: 'es2022',
         parser: {
           syntax: 'typescript',
           decorators: true,
